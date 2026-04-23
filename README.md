@@ -28,7 +28,7 @@ cd atlas-ai-<votre-nom>
 
 # Si vous utilisez un environnement virtuel (recommandé)
 python -m venv venv
-source venv/bin/activate  # Sur Windows : venv\Scripts\activate
+venv\Scripts\activate
 
 # Installation via requirements.txt ou pyproject.toml
 
