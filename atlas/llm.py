@@ -92,7 +92,7 @@ def chat_turn(user_input, guard, vector_db, conv_memory, client, judge):
     messages_pour_llm = conv_memory.get_history() + [{"role": "user", "content": prompt_enrichi}]
 
     # 🚨 Appel à la génération !
-    full_response, trace_id = ollama_completion(messages_pour_llm, tags_pour_langfuse, client)
+    full_response, trace_id = ollama_completion(messages_pour_llm, client)
 
     # Sauvegardes
     conv_memory.add_message("user", safe_input)
