@@ -72,6 +72,6 @@ dependencies : C'est ici que tu listes les bibliothèques externes dont ton code
 
 👥 L'équipe (Binôme)
 
-[Lapeze Foucault] : Focus sur l'intégration du LLM (llm.py) et la gestion de l'historique (memory.py).
+[Silva Costa José] : Focus sur l'intégration du LLM (llm.py) et la gestion de l'historique (memory.py).
 
-[Silva Costa José] : Focus sur la sécurité (guardrails.py) et la remontée des métriques d'utilisation (monitoring.py).
+[Lapeze Foucault] : Focus sur la sécurité (guardrails.py) et la remontée des métriques d'utilisation (monitoring.py).

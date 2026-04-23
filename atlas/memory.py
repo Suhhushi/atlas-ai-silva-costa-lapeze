@@ -13,7 +13,7 @@ class VectorMemory:
     def save_interaction(self, question: str, response: str):
         # Sauvegarde une paire Question/Réponse dans la base vectorielle.
         
-        doc_id = str(uuid.uuid4()) # Génère un ID unique
+        doc_id = str(uuid.uuid4())
         document = f"Question: {question}\nRéponse: {response}"
         
         self.collection.add(
@@ -37,7 +37,7 @@ class VectorMemory:
         return []
 
 class ConversationMemory:
-    # Gère la mémoire à court terme (la discussion en cours dans la RAM)
+    # Gère la mémoire à court terme
     def __init__(self):
         self.messages: List[Dict[str, str]] = []
 
@@ -54,6 +54,6 @@ class ConversationMemory:
         # On crée un bloc de contexte avec les souvenirs trouvés
         context_block = "\n".join([f"- {mem}" for mem in long_term_memories])
         
-        prompt = f"""Voici quelques notes de nos conversations passées qui pourraient t'aider : {context_block} Utilise ces informations si elles sont pertinentes pour répondre à la nouvelle question.Nouvelle question : {question}"""
+        prompt = f"""Voici quelques notes de nos conversations passées qui pourraient t'aider : {context_block} Utilise ces informations si elles sont pertinentes pour répondre à la nouvelle question. Nouvelle question : {question}"""
         
         return prompt
