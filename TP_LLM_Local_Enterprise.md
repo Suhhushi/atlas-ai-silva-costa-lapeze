@@ -45,6 +45,8 @@ Votre binôme est l'équipe projet. Vous devez :
 
 **Critère d'acceptation S0** : `git log` affiche au moins 2 commits (un par personne), le README explique comment lancer, `pip install -e .` (ou équivalent) fonctionne sans erreur.
 
+
+
 ---
 
 ## 🧱 Sprint 1 — Mettre le LLM en ligne
