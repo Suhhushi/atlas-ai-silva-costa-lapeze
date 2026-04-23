@@ -16,3 +16,6 @@ dependencies = [
 
 [tool.setuptools]
 packages = ["atlas"]
+
+[project.scripts]
+atlas-chat = "atlas.llm:main"

@@ -1,6 +1,8 @@
 import requests
 import json
 from typing import List, Dict, Generator
+import argparse
+import sys
 
 class OllamaClient:
     def __init__(self, model_name: str = "qwen3:4b-instruct-2507-q4_K_M", base_url: str = "http://localhost:11434"):
@@ -32,32 +34,60 @@ class OllamaClient:
             yield f"Une erreur inattendue est survenue : {e}"
 
 
-if __name__ == "__main__":
-    print("Lancement du prototype ATLAS (Tapez 'quit' pour arrêter)\n")
+def main():
+    parser = argparse.ArgumentParser(
+        description="ATLAS AI - Assistant conversationnel 100% on-premise"
+    )
+    parser.add_argument(
+        "-m", "--model",
+        type=str,
+        default="qwen3:4b-instruct-2507-q4_K_M",
+        help="Le nom du modèle Ollama à utiliser"
+    )
+    parser.add_argument(
+        "--url",
+        type=str,
+        default="http://localhost:11434",
+        help="L'URL de l'API Ollama"
+    )
     
-    client = OllamaClient(model_name="qwen3:4b-instruct-2507-q4_K_M")
+    args = parser.parse_args()
+
+    print(f"Lancement du prototype ATLAS (Modèle: {args.model})")
+    print("Tapez 'quit', 'exit' ou 'quitter' pour arrêter le chat.\n")
     
-    # Création de la mémoire
-    historique: List[Dict[str, str]] = []
+    # Initialisation avec les paramètres de la CLI
+    client = OllamaClient(model_name=args.model, base_url=args.url)
+    historique = []
     
     while True:
-        # Saisie utilisateur
-        user_input = input("\n Vous : ")
-        if user_input.lower() in ['quit', 'exit', 'quitter']:
-            print("Au revoir !")
-            break
+        try:
+            user_input = input("\n Vous : ")
+            if user_input.lower() in ['quit', 'exit', 'quitter']:
+                print("Au revoir !")
+                break
+                
+            if not user_input.strip():
+                continue
+                
+            historique.append({"role": "user", "content": user_input})
             
-        # Ajout de la question à l'historique
-        historique.append({"role": "user", "content": user_input})
-        
-        print("ATLAS : ", end="", flush=True)
-        full_response = ""
-        
-        # Appel à l'API et affichage en streaming
-        for chunk in client.chat_stream(historique):
-            print(chunk, end="", flush=True)
-            full_response += chunk           
+            print("ATLAS : ", end="", flush=True)
+            full_response = ""
+            
+            # Affichage en streaming
+            for chunk in client.chat_stream(historique):
+                print(chunk, end="", flush=True)
+                full_response += chunk           
 
-        print()
-        
-        historique.append({"role": "assistant", "content": full_response})
+            print() 
+            historique.append({"role": "assistant", "content": full_response})
+            
+        except KeyboardInterrupt:
+            print("\nArrêt de l'assistant. Au revoir !")
+            break
+        except Exception as e:
+            print(f"\n Une erreur est survenue : {e}")
+
+if __name__ == "__main__":
+    main()
