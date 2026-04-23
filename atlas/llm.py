@@ -1,11 +1,17 @@
+from dotenv import load_dotenv
 import requests
 import json
 from typing import List, Dict, Generator
 import argparse
 import sys
-from atlas.guardrails import Guardrails
 
+load_dotenv()
+
+from atlas.guardrails import Guardrails
 from atlas.memory import ConversationMemory, VectorMemory
+from langfuse import observe, Langfuse
+
+langfuse = Langfuse()
 
 class OllamaClient:
     def __init__(self, model_name: str = "qwen3:4b-instruct-2507-q4_K_M", base_url: str = "http://localhost:11434"):
@@ -13,6 +19,7 @@ class OllamaClient:
         self.base_url = base_url
         self.chat_endpoint = f"{self.base_url}/api/chat"
 
+    @observe(name="atlas_chat")
     def chat_stream(self, messages: List[Dict[str, str]]) -> Generator[str, None, None]:
         payload = {
             "model": self.model_name,
@@ -65,49 +72,47 @@ def main():
     
     vector_db = VectorMemory()
     conv_memory = ConversationMemory()
-    historique = []
     
     while True:
         try:
             user_input = input("\n Vous : ")
             if user_input.lower() in ['quit', 'exit', 'quitter']:
-                print("Au revoir")
+                print(" Au revoir !")
                 break
-            
-            safe_input = guard.process_input(user_input)
-            historique.append({"role": "user", "content": safe_input})
                 
             if not user_input.strip():
                 continue
 
-            souvenirs = vector_db.search_memories(user_input)
-
-            prompt_enrichi = conv_memory.build_prompt_with_context(user_input, souvenirs)
-
-            messages_pour_llm = conv_memory.get_history() + [{"role": "user", "content": prompt_enrichi}]
-                
-            historique.append({"role": "user", "content": user_input})
+            # vérifie l'entrée utilisateur
+            safe_input = guard.process_input(user_input)
             
-            print("ATLAS : ", end="", flush=True)
+            # cherche dans ChromaDB
+            souvenirs = vector_db.search_memories(safe_input)
+
+            # construit le contexte
+            prompt_enrichi = conv_memory.build_prompt_with_context(safe_input, souvenirs)
+
+            # On récupère l'historique
+            messages_pour_llm = conv_memory.get_history() + [{"role": "user", "content": prompt_enrichi}]
+        
+            print(" ATLAS : ", end="", flush=True)
             full_response = ""
             
-            # Affichage en streaming
+            # STREAMING
             for chunk in client.chat_stream(messages_pour_llm):
                 print(chunk, end="", flush=True)
                 full_response += chunk           
             print() 
 
-            conv_memory.add_message("user", user_input)
+            # On sauvegarde
+            conv_memory.add_message("user", safe_input)
             conv_memory.add_message("assistant", full_response)
-
-            vector_db.save_interaction(user_input, full_response)
-
-            historique.append({"role": "assistant", "content": full_response})
-        
+            vector_db.save_interaction(safe_input, full_response)
+            
         except ValueError as e:
-            print(f"\n BLOCAGE : {e}")    
+            print(f"\n BLOCAGE SÉCURITÉ : {e}")    
         except KeyboardInterrupt:
-            print("\nArrêt de l'assistant. Au revoir")
+            print("\n Arrêt de l'assistant. Au revoir !")
             break
         except Exception as e:
             print(f"\n Une erreur est survenue : {e}")

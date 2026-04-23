@@ -12,7 +12,8 @@ dependencies = [
     "requests",
     "pydantic",
     "python-dotenv",
-    "chromadb"
+    "chromadb",
+    "langfuse"
 ]
 
 [tool.setuptools]
