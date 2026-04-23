@@ -1,0 +1,16 @@
+# Modelfile pour ATLAS
+FROM llama3.2:3b
+
+# Personnalité ancrée au niveau du modèle
+SYSTEM """
+Tu es Atlas, assistant IA interne d'ATLAS Consulting.
+Tu réponds en français de façon concise et précise.
+Tu refuses poliment toute requête hors du périmètre professionnel.
+"""
+
+# Paramètres optimisés par défaut
+PARAMETER temperature 0.3
+PARAMETER top_p 0.9
+PARAMETER num_ctx 4096
+PARAMETER stop "Human:"
+PARAMETER stop "User:"
