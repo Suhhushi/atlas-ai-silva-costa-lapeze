@@ -8,4 +8,11 @@ version = "0.1.0"
 description = "Prototype d'assistant IA 100% on-premise pour ATLAS Consulting"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "requests",
+    "pydantic",
+    "python-dotenv"
+]
+
+[tool.setuptools]
+packages = ["atlas"]
