@@ -13,7 +13,8 @@ dependencies = [
     "pydantic",
     "python-dotenv",
     "chromadb",
-    "langfuse"
+    "langfuse",
+    "pytest"
 ]
 
 [tool.setuptools]
