@@ -27,25 +27,23 @@ Le projet est découpé en plusieurs briques métiers indépendantes :
 
 ## Structure du projet
 
-\`\`\`
 atlas-ai/
-├── atlas/                 # Code source principal (Package Python)
+├── atlas/                # Code source principal (Package Python)
 │   ├── __init__.py
-│   ├── cli.py             # Point d'entrée et orchestration
-│   ├── guardrails.py      # Règles de sécurité et filtrage
-│   ├── llm.py             # Client API Ollama
-│   ├── memory.py          # Gestion ChromaDB et historique
-│   └── monitoring.py      # LLM Judge pour l'évaluation
-├── config/                # Fichiers de configuration
+│   ├── cli.py            # Point d'entrée et orchestration
+│   ├── guardrails.py     # Règles de sécurité et filtrage
+│   ├── llm.py            # Client API Ollama
+│   ├── memory.py         # Gestion ChromaDB et historique
+│   └── monitoring.py     # LLM Judge pour l'évaluation
+├── config/               # Fichiers de configuration
 ├── data/
-│   └── memory/            # Base de données vectorielle locale (ChromaDB)
-├── scripts/               # Scripts utilitaires
-├── tests/                 # Suite de tests unitaires (Pytest)
+│   └── memory/           # Base de données vectorielle locale (ChromaDB)
+├── scripts/              # Scripts utilitaires
+├── tests/                # Suite de tests unitaires (Pytest)
 │   ├── test_guardrails.py
 │   └── test_memories.py
-├── pyproject.toml         # Configuration du package et dépendances
+├── pyproject.toml        # Configuration du package et dépendances
 └── README.md
-\`\`\`
 
 ---
 
