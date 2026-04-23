@@ -3,6 +3,7 @@ import json
 from typing import List, Dict, Generator
 import argparse
 import sys
+from atlas.guardrails import Guardrails
 
 from atlas.memory import ConversationMemory, VectorMemory
 
@@ -58,8 +59,10 @@ def main():
     print(f"Lancement du prototype ATLAS (Modèle: {args.model})")
     print("Tapez 'quit', 'exit' ou 'quitter' pour arrêter le chat.\n")
     
-    # Initialisation avec les paramètres de la CLI
     client = OllamaClient(model_name=args.model, base_url=args.url)
+   
+    guard = Guardrails(llm_client=client) 
+    
     vector_db = VectorMemory()
     conv_memory = ConversationMemory()
     historique = []
@@ -70,6 +73,9 @@ def main():
             if user_input.lower() in ['quit', 'exit', 'quitter']:
                 print("Au revoir")
                 break
+            
+            safe_input = guard.process_input(user_input)
+            historique.append({"role": "user", "content": safe_input})
                 
             if not user_input.strip():
                 continue
@@ -97,12 +103,15 @@ def main():
             vector_db.save_interaction(user_input, full_response)
 
             historique.append({"role": "assistant", "content": full_response})
-            
+        
+        except ValueError as e:
+            print(f"\n BLOCAGE : {e}")    
         except KeyboardInterrupt:
             print("\nArrêt de l'assistant. Au revoir")
             break
         except Exception as e:
             print(f"\n Une erreur est survenue : {e}")
+        continue
 
 if __name__ == "__main__":
     main()
