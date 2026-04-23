@@ -11,7 +11,8 @@ requires-python = ">=3.10"
 dependencies = [
     "requests",
     "pydantic",
-    "python-dotenv"
+    "python-dotenv",
+    "chromadb"
 ]
 
 [tool.setuptools]

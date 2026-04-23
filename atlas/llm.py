@@ -4,6 +4,8 @@ from typing import List, Dict, Generator
 import argparse
 import sys
 
+from atlas.memory import ConversationMemory, VectorMemory
+
 class OllamaClient:
     def __init__(self, model_name: str = "qwen3:4b-instruct-2507-q4_K_M", base_url: str = "http://localhost:11434"):
         self.model_name = model_name
@@ -36,7 +38,7 @@ class OllamaClient:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="ATLAS AI - Assistant conversationnel 100% on-premise"
+        description="ATLAS AI - Assistant conversationnel"
     )
     parser.add_argument(
         "-m", "--model",
@@ -58,17 +60,25 @@ def main():
     
     # Initialisation avec les paramètres de la CLI
     client = OllamaClient(model_name=args.model, base_url=args.url)
+    vector_db = VectorMemory()
+    conv_memory = ConversationMemory()
     historique = []
     
     while True:
         try:
             user_input = input("\n Vous : ")
             if user_input.lower() in ['quit', 'exit', 'quitter']:
-                print("Au revoir !")
+                print("Au revoir")
                 break
                 
             if not user_input.strip():
                 continue
+
+            souvenirs = vector_db.search_memories(user_input)
+
+            prompt_enrichi = conv_memory.build_prompt_with_context(user_input, souvenirs)
+
+            messages_pour_llm = conv_memory.get_history() + [{"role": "user", "content": prompt_enrichi}]
                 
             historique.append({"role": "user", "content": user_input})
             
@@ -76,15 +86,20 @@ def main():
             full_response = ""
             
             # Affichage en streaming
-            for chunk in client.chat_stream(historique):
+            for chunk in client.chat_stream(messages_pour_llm):
                 print(chunk, end="", flush=True)
                 full_response += chunk           
-
             print() 
+
+            conv_memory.add_message("user", user_input)
+            conv_memory.add_message("assistant", full_response)
+
+            vector_db.save_interaction(user_input, full_response)
+
             historique.append({"role": "assistant", "content": full_response})
             
         except KeyboardInterrupt:
-            print("\nArrêt de l'assistant. Au revoir !")
+            print("\nArrêt de l'assistant. Au revoir")
             break
         except Exception as e:
             print(f"\n Une erreur est survenue : {e}")
