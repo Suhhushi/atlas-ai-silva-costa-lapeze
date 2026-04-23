@@ -27,7 +27,7 @@ Le projet est découpé en plusieurs briques métiers indépendantes :
 
 ## Structure du projet
 
-\`\`\`text
+\`\`\`
 atlas-ai/
 ├── atlas/                 # Code source principal (Package Python)
 │   ├── __init__.py
