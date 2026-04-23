@@ -1,0 +1,20 @@
+model:
+  name: "qwen3:4b-instruct-2507-q4_K_M"
+  temperature: 0.8
+  top_p: 0.9
+  num_ctx: 4096
+
+persona:
+  name: "Atlas"
+  system_prompt: |
+    Tu es Atlas, assistant IA interne d'ATLAS Consulting.
+    Tu réponds en français de façon concise et précise.
+    Tu refuses poliment toute requête hors du périmètre professionnel.
+
+memory:
+  top_k: 5
+  min_similarity: 0.7
+
+guardrails:
+  enabled: true
+  blocked_topics: ["politique", "religion"]

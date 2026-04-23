@@ -1,3 +1,4 @@
+from http import client
 from dotenv import load_dotenv
 import requests
 import json
@@ -7,17 +8,22 @@ import sys
 
 load_dotenv()
 
+from atlas.config import load_config
 from atlas.monitoring import LLMJudge
 from atlas.guardrails import Guardrails
 from atlas.memory import ConversationMemory, VectorMemory
 
-from langfuse import observe, get_client
+from langfuse import observe, get_client, propagate_attributes
 langfuse = get_client()
 
 class OllamaClient:
-    def __init__(self, model_name: str = "qwen3:4b-instruct-2507-q4_K_M", base_url: str = "http://localhost:11434"):
+    def __init__(self, model_name: str, base_url: str = "http://localhost:11434", 
+                 temperature: float = 0.3, top_p: float = 0.9, num_ctx: int = 4096):
         self.model_name = model_name
         self.base_url = base_url
+        self.temperature = temperature
+        self.top_p = top_p
+        self.num_ctx = num_ctx
         self.chat_endpoint = f"{self.base_url}/api/chat"
         self.last_input_tokens = 0
         self.last_output_tokens = 0
@@ -26,7 +32,12 @@ class OllamaClient:
         payload = {
             "model": self.model_name,
             "messages": messages,
-            "stream": True
+            "stream": True,
+            "options": {
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                "num_ctx": self.num_ctx
+            }
         }
 
         try:
@@ -55,7 +66,7 @@ def ollama_completion(messages_pour_llm, client):
         model=client.model_name
     )
 
-    print(" ATLAS : ", end="", flush=True)
+    print(f" {client.persona_name} : ", end="", flush=True)
     full_response = ""
     
     # Stream
@@ -76,9 +87,18 @@ def ollama_completion(messages_pour_llm, client):
     return full_response, langfuse.get_current_trace_id()
 
 @observe()
-def chat_turn(user_input, guard, vector_db, conv_memory, client, judge):
+def chat_turn(user_input, guard, vector_db, conv_memory, client, judge, config):
     # Sécurité
-    safe_input = guard.process_input(user_input)
+    if config.guardrails.enabled:
+        safe_input = guard.process_input(user_input)
+    else:
+        safe_input = user_input
+
+    souvenirs = vector_db.search_memories(
+        safe_input, 
+        n_results=config.memory.top_k,
+        distance_threshold=config.memory.min_similarity
+    )
     
     # Mémoire RAG
     souvenirs = vector_db.search_memories(safe_input)
@@ -89,10 +109,13 @@ def chat_turn(user_input, guard, vector_db, conv_memory, client, judge):
 
     # Préparation du prompt
     prompt_enrichi = conv_memory.build_prompt_with_context(safe_input, souvenirs)
-    messages_pour_llm = conv_memory.get_history() + [{"role": "user", "content": prompt_enrichi}]
 
-    # 🚨 Appel à la génération !
-    full_response, trace_id = ollama_completion(messages_pour_llm, client)
+    system_message = [{"role": "system", "content": config.persona.system_prompt}]
+    messages_pour_llm = system_message + conv_memory.get_history() + [{"role": "user", "content": prompt_enrichi}]
+
+    # Appel à la génération
+    with propagate_attributes(tags=tags_pour_langfuse):
+        full_response, trace_id = ollama_completion(messages_pour_llm, client)
 
     # Sauvegardes
     conv_memory.add_message("user", safe_input)
@@ -105,15 +128,24 @@ def chat_turn(user_input, guard, vector_db, conv_memory, client, judge):
 
 
 def main():
+    config = load_config()
+
     parser = argparse.ArgumentParser(description="ATLAS AI - Assistant conversationnel")
-    parser.add_argument("-m", "--model", type=str, default="qwen3:4b-instruct-2507-q4_K_M")
+    parser.add_argument("-m", "--model", type=str, default=config.model.name)
     parser.add_argument("--url", type=str, default="http://localhost:11434")
     args = parser.parse_args()
 
     print(f" Lancement du prototype ATLAS (Modèle: {args.model})")
     print("Tapez 'quit', 'exit' ou 'quitter' pour arrêter le chat.\n")
     
-    client = OllamaClient(model_name=args.model, base_url=args.url)
+    client = OllamaClient(
+        model_name=args.model, 
+        base_url=args.url,
+        temperature=config.model.temperature,
+        top_p=config.model.top_p,
+        num_ctx=config.model.num_ctx
+    )
+    client.persona_name = config.persona.name
     guard = Guardrails(llm_client=client) 
     vector_db = VectorMemory()
     conv_memory = ConversationMemory()
@@ -129,8 +161,8 @@ def main():
             if not user_input.strip():
                 continue
 
-            chat_turn(user_input, guard, vector_db, conv_memory, client, judge)
-            
+            chat_turn(user_input, guard, vector_db, conv_memory, client, judge, config)  
+
         except ValueError as e:
             print(f"\n BLOCAGE SÉCURITÉ : {e}")    
         except KeyboardInterrupt:
